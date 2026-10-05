@@ -224,6 +224,14 @@ static void show_hma_info(int show_hma_free)
     }
 }
 
+/* A reproducible build may fix the date and time shown in the help. */
+#ifndef MEM_BUILD_DATE
+#define MEM_BUILD_DATE __DATE__
+#endif
+#ifndef MEM_BUILD_TIME
+#define MEM_BUILD_TIME __TIME__
+#endif
+
 static void int_15_info(void)
 {
 #ifdef PC88VA
@@ -1522,7 +1530,7 @@ void show_help(opt_t *opts, int opt_count)
 #ifdef DEBUG
     printf(" DEBUG");
 #endif
-    printf(" [%s %s", __DATE__, __TIME__);
+    printf(" [%s %s", MEM_BUILD_DATE, MEM_BUILD_TIME);
 #ifdef __WATCOMC__
     printf(" Watcom C %u.%u", __WATCOMC__ / 100, __WATCOMC__ % 100);
 #endif
