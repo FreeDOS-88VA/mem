@@ -1033,7 +1033,13 @@ int dbghmamin;
 int dbgcpu;
 #endif
 
+#ifdef PC88VA
+/* PC-88VA: the static heap is part of the EXEC minimum, and a 256 KiB
+   machine has well under 50 KB free; a VA MCB chain needs far less than this. */
+#define MALLOC_BUFFER_SIZE 10000
+#else
 #define MALLOC_BUFFER_SIZE 30000
+#endif
 static char malloc_buffer[MALLOC_BUFFER_SIZE];
 static size_t mbuffer_idx;
 
