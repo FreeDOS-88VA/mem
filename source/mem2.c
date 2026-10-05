@@ -226,6 +226,11 @@ static void show_hma_info(int show_hma_free)
 
 static void int_15_info(void)
 {
+#ifdef PC88VA
+    /* PC-88VA: INT 15h is a hardware interrupt vector, not a BIOS service;
+       there is no extended memory to report through it. */
+}
+#else
     ulong result = get_ext_mem_size();
 
     if (GET_EXT_MEM_SIZE_OK(result)) {
@@ -238,6 +243,7 @@ static void int_15_info(void)
 	       GET_EXT_MEM_SIZE_ERROR(result));
     }
 }
+#endif
 
 static void normal_list(unsigned memfree, UPPERINFO *upper, int show_hma_free,
 			int show_int_15)

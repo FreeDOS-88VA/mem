@@ -225,7 +225,12 @@
 #define getvect _dos_getvect
 #define outportb outp
 #define inportb inp
+#ifdef PC88VA
+/* PC-88VA: see pc88va_conv_end(); INT 12h is not a BIOS service there. */
+#define biosmemory() (last_conv_seg / CONV_PARA_PER_KB)
+#else
 #define biosmemory _bios_memsize /* returns kilobytes */
+#endif
 #endif
 
 #include <stdio.h>
@@ -539,9 +544,17 @@ void far (*xms_drv)(void);
  */
 unsigned int last_conv_seg;
 
+#ifdef PC88VA
+static unsigned pc88va_conv_end(void);
+#endif
+
 void setup_globals(void)
 {
+#ifdef PC88VA
+    last_conv_seg = pc88va_conv_end();
+#else
     last_conv_seg = biosmemory() * CONV_PARA_PER_KB;
+#endif
 }
 
 /*
@@ -951,6 +964,28 @@ static ulong check_e801(void)
 
 #endif
 
+#ifdef PC88VA
+/*
+ * PC-88VA: INT 12h is a hardware interrupt vector there, not the PC BIOS
+ * memory-size service. Conventional memory ends where the DOS MCB chain
+ * ends; the kernel builds that chain up to the RAM top it measured.
+ */
+static unsigned pc88va_conv_end(void)
+{
+    char far *lol = dos_list_of_lists();
+    unsigned seg = *(unsigned far *)(lol - 2);
+
+    for (;;) {
+	unsigned char far *mcb = (unsigned char far *)MK_FP(seg, 0);
+	unsigned size = *(unsigned far *)(mcb + 3);
+
+	if (*mcb != 'M')	/* 'Z' ends the chain; stop on damage too */
+	    return seg + 1 + size;
+	seg += 1 + size;
+    }
+}
+#endif
+
 #define HMA_FREE_NOT_DOS 0x0000 /* DOS is not in HMA */
 #define HMA_FREE_UNKNOWN 0xFFFF /* DOS doesn't support querying free HMA */
 
@@ -1289,6 +1324,9 @@ static XMSINFO *check_xms(void)
 	printf("check_xms: 386: %s\n", xms->is_386 ? "yes" : "no");
     }
 #endif
+#ifndef PC88VA
+    /* PC-88VA: no INT 15h memory services and no CMOS; extended memory is
+       reported only through an XMS driver below. */
     if (xms->is_386) {
 	/* yes: we have a 386! and can use ax=0xe820 for int15 */
 	ulong counter = 0;
@@ -1325,6 +1363,7 @@ static XMSINFO *check_xms(void)
 	    }
 	total *= 1024UL;
     }
+#endif
 
     xms->total=total;
 #ifdef DEBUG
